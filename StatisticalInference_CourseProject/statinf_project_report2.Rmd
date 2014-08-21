@@ -1,0 +1,95 @@
+# Exercises on Hypothesis Testing for ToothGrowth Data
+========================================================
+
+# Basic Exploratory Analysis and Data Summary
+
+The study from which the toothgrowth dataset originates is titled 'The Effect of Vitamin C on Tooth Growth in Guinea Pigs'
+The experiment measured the average length of teeth (len) in 10 different guinea pigs, each receiving three levels of Vitamin C doses (dose)
+Additionally, two different delivery methods were tried (supp)
+Below we show a basic summary of the data, along with the existing values for supp and dose.
+
+```{r loaddata}    
+    library(datasets)
+    library(reshape2)
+    data(ToothGrowth)
+```
+
+```{r summaries}
+    summary(ToothGrowth)
+    unique(ToothGrowth$dose)
+    unique(ToothGrowth$supp)
+```
+
+Boxplots showing the distribution of the length of tooth compared to dose and supp are presented as well.
+```{r boxplots}
+    par(mfrow=c(1,2))
+    with(ToothGrowth,boxplot(len ~ dose))
+    with(ToothGrowth,boxplot(len ~ supp))
+    par(mfrow=c(1,1))
+```
+
+## Pre-processing
+
+We need to make some casting and subsetting to leave the data in the right format for our work.
+
+```{r preprocess}
+ToothGrowth$subject <- rep(1:10,6)
+wideTG <- dcast(ToothGrowth,supp + subject ~ dose, value.var = "len")
+colnames(wideTG)[3:5] <- c("HALF","ONE","TWO")
+wideTGOJ <- subset(wideTG, supp=="OJ")
+wideTGVC <- subset(wideTG, supp=="VC")
+```
+
+## Hypothesis testing
+
+### Establish hypothesis
+
+We want to compare the tooth growth by the type of delivery method (supp) for each dose, and see whether there is a statistically significant difference for the resulting average length of teeth between both delivery methods.  
+The hypothesis are formulated are as follows:
+
+$H_0$ : $\mu_o$ = $\mu_a$
+
+$H_a$ : $\mu_o$ =\= $\mu_a$
+
+_o_ and _a_ subscripts indicate the data available for the supp values of _OJ_ (Orange Juice delivery) and _VC_ (Ascorbic Acid delivery) respectively.  
+A separate test is performed for each level of dosage.
+
+### Testing
+
+Here t-tests are performed for each level of dosage. 
+A standard paired t-test is suited for this case, as the $H_a$ it works with (the 'true difference between the means is not equal to 0') is the same as our $H_a$ (the means for each group are different)
+```{r ttesting}
+t.test(x=wideTGOJ$HALF,y=wideTGVC$HALF,paired=TRUE,var.equal=FALSE)
+```
+
+```{r ttestonegram}
+t.test(x=wideTGOJ$ONE,y=wideTGVC$ONE,paired=TRUE,var.equal=FALSE)
+```
+
+```{r testtwogram}
+t.test(x=wideTGOJ$TWO,y=wideTGVC$TWO,paired=TRUE,var.equal=FALSE)
+```
+
+## Results and assumptions
+
+
+### Asumptions
+
+A complete description of the study was not found, but based on the fact only 10 guinea pigs are mentioned in the available references, it is assumed that the test subjects were the same in both tests. Because of this, a paired test was performed because the samples are not independent.  
+Other more standard assumptions are that the subjects were randomly sampled from a population (so the guinea pigs were not 'cherry-picked'), and that said population follows a Gaussian distribution. We do not assume equal variances, hence the var.equal=FALSE.  
+Finally, it is also assumed that when the test subjects began their second intake of vitamin, their average tooth length was sufficiently close to how it was when they began their first intake of vitamin C (one intake period for each delivery method).
+
+
+### Results
+
+We can see from the test output that there is statistically significant difference in the mean tooth length at dosage levels for two cases:
+For 0.5 gram dosage (HALF) and 1.0 gram dosage (ONE) : 
+
++ The high t quantile of 2.979 and low p-value of 0.015, suggests it is very unlikely (~1.5% chance) to observe such difference in means between both groups in case $H_0$ were true. Based on this information $H_0$ is rejected for dosage level of 0.5 grams.
++ The high t quantile of 3.372 and low p-value of 0.008, suggests it is very unlikely (<1% chance) to observe such difference in means between both groups in case $H_0$ were true. Based on this information $H_0$ is rejected for dosage level of 1.0 grams. It is noticeable the p-value is even lower than for 0.5 grams dosage.
+
+We also notice this difference is absent for a dosage of 2.0 grams (TWO):
++ With a dosage of 2 grams, the t quantile is -0.04, while the p-value is 0.967. This , in contrast to previous cases, indicates that observing this difference in means between both groups is very likely  (~96.7% chance). In this case we fail to reject $H_0$.
+
+In summary, this means there is a significant (statistically) increase in the tooth growth when delivering vitamin C via OJ (Orange Juice) over delivering bia VC (ascorbic acid) for levels of dosage of 0.5 and 1.0 grams.  
+This increase vanishes once the dosage is 2.0 grams. At this level we cannot see a significant difference in tooth growth.

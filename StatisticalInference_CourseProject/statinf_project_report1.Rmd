@@ -1,0 +1,84 @@
+# Simulation Exercises on Exponential Distribution
+========================================================
+
+## Simulation
+
+The first step is setting up the parameters for the simulation.
+```{r vardec}
+lambda <- 0.2
+nsamples <- 40
+nsims <- 1000
+```
+
+Now we run the simulations and store the resulting data.
+A histogram is added as a quick summary of the resulting data
+```{r runsims}
+idx <- 0
+means_data <- numeric()
+set.seed(65455)
+while(idx < nsims){
+sim_mean <- mean(rexp(nsamples,lambda))
+means_data <- c(means_data,sim_mean)
+idx <- idx+1
+}
+```
+
+## Review of simulation results
+
+We can now review the resulting data.
+```{r calc}
+theoretical_mean <- 1/0.2
+theoretical_variance <- (1/0.2)^2
+
+sample_mean <- mean(means_data)
+sample_variance <- var(means_data)
+sample_sd <- sd(means_data)
+
+expected_variance <- theoretical_variance/(nsamples)
+```
+
+We will use the ration of sampled value vs theoretical value to compare the results of the simulation.
+A value of 1 indicates both values are equal. The further the ratio is from one, the bigger the difference between theoretical value and obtained value.
+
++ For the mean, the ratio of theoretical mean (`r theoretical_mean`) vs simulation mean (`r sample_mean`) is : `r sample_mean/theoretical_mean`.
+
+
++ For the variance, the ratio of expected theoretical variance (`r expected_variance`) vs simulation variance (`r sample_variance`) is : `r sample_variance/expected_variance`.
+
+## Evaluation of distribution normality
+
+```{r normalplot}
+hist(means_data,prob=TRUE,col="orangered")
+first_sd_volume <- length(means_data[means_data < sample_mean+sample_sd 
+                                     & means_data > sample_mean-sample_sd])/nsims
+second_sd_volume <- length(means_data[means_data < sample_mean+2*sample_sd 
+                                      & means_data > sample_mean-2*sample_sd])/nsims
+third_sd_volume <- length(means_data[means_data < sample_mean+3*sample_sd 
+                                     & means_data > sample_mean-3*sample_sd])/nsims
+```
+
+It is expected that in a normal distribution, the percentage of observations within one, two and three standard deviation from the mean should be around 68%, 95% and 99% respectively.
+
+The percentage of values within one, two, and three standard deviations from the mean in our simulation data is:
++ one SD : `r first_sd_volume`
++ two SD : `r second_sd_volume`
++ three SD : `r third_sd_volume`
+
+## Evaluation of confidence interval
+
+Finally we evaluate the confidence range for 1.96 SDs
+```{r confidencerange}
+cov_range <- 1.96 * sqrt(expected_variance) # sqrt(theoretical_variance/nsamples)
+low_conf_value <- sample_mean - cov_range
+high_conf_value <- sample_mean + cov_range
+```
+
+The confidence interval is : [`r low_conf_value`,`r high_conf_value`]
+
+We can calculate the percentage of samples that are contained in this interval:
+```{r rangecoverage}
+coverage <- length(means_data[means_data > low_conf_value 
+                              & means_data < high_conf_value])/nsims
+```
+
+The percentage of simulations that fall within the confidence range in these simulations is : `r coverage`
